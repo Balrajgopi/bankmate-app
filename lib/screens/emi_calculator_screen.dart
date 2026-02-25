@@ -5,100 +5,192 @@ class EmiCalculatorScreen extends StatefulWidget {
   const EmiCalculatorScreen({super.key});
 
   @override
-  State<EmiCalculatorScreen> createState() => _EmiCalculatorScreenState();
+  State<EmiCalculatorScreen> createState() =>
+      _EmiCalculatorScreenState();
 }
 
-class _EmiCalculatorScreenState extends State<EmiCalculatorScreen> {
-  final TextEditingController loanController = TextEditingController();
-  final TextEditingController rateController = TextEditingController();
-  final TextEditingController tenureController = TextEditingController();
+class _EmiCalculatorScreenState
+    extends State<EmiCalculatorScreen> {
 
-  double emi = 0;
+  final principalController = TextEditingController();
+  final rateController = TextEditingController();
+  final tenureController = TextEditingController();
+
+  double emi = 0.0;
 
   void calculateEmi() {
-    final double principal = double.tryParse(loanController.text) ?? 0;
-    final double annualRate = double.tryParse(rateController.text) ?? 0;
-    final int months = int.tryParse(tenureController.text) ?? 0;
+    final principal =
+    double.tryParse(principalController.text);
+    final rate =
+    double.tryParse(rateController.text);
+    final tenure =
+    double.tryParse(tenureController.text);
 
-    if (principal <= 0 || annualRate <= 0 || months <= 0) {
+    if (principal == null ||
+        rate == null ||
+        tenure == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter valid values')),
+        const SnackBar(
+          content: Text("Please enter valid values"),
+        ),
       );
       return;
     }
 
-    final double monthlyRate = annualRate / 12 / 100;
+    double monthlyRate = rate / (12 * 100);
+    double months = tenure * 12;
 
-    final double emiValue =
-        (principal * monthlyRate * pow(1 + monthlyRate, months)) /
-            (pow(1 + monthlyRate, months) - 1);
+    double calculatedEmi = (principal *
+        monthlyRate *
+        pow(1 + monthlyRate, months)) /
+        (pow(1 + monthlyRate, months) - 1);
 
     setState(() {
-      emi = emiValue;
+      emi = calculatedEmi;
     });
+  }
+
+  void resetFields() {
+    principalController.clear();
+    rateController.clear();
+    tenureController.clear();
+    setState(() {
+      emi = 0.0;
+    });
+  }
+
+  Widget inputCard(
+      String label, TextEditingController controller) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.symmetric(
+          horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: [
+          BoxShadow(
+            color:
+            Colors.black.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          labelText: label,
+          border: InputBorder.none,
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('EMI Calculator'),
+        title: const Text("EMI Calculator"),
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+        padding: const EdgeInsets.all(20),
+        child: ListView(
           children: [
-            TextField(
-              controller: loanController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Loan Amount (₹)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
 
-            TextField(
-              controller: rateController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Interest Rate (%)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
+            // 🔹 INPUTS
+            inputCard("Loan Amount (₹)",
+                principalController),
+            inputCard("Interest Rate (%)",
+                rateController),
+            inputCard("Loan Tenure (Years)",
+                tenureController),
 
-            TextField(
-              controller: tenureController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Tenure (Months)',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
 
+            // 🔹 CALCULATE BUTTON
             ElevatedButton(
-              onPressed: calculateEmi,
-              child: const Text('Calculate EMI'),
-            ),
-            const SizedBox(height: 20),
-
-            if (emi > 0)
-              Card(
-                color: Colors.green.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'Monthly EMI: ₹${emi.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
+              style: ElevatedButton.styleFrom(
+                padding:
+                const EdgeInsets.symmetric(
+                    vertical: 14),
+                shape:
+                RoundedRectangleBorder(
+                  borderRadius:
+                  BorderRadius.circular(18),
                 ),
               ),
+              onPressed: calculateEmi,
+              child: const Text(
+                "Calculate EMI",
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // 🔹 RESULT CARD
+            Container(
+              padding:
+              const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.grey.shade900
+                    : Colors.blue.shade50,
+                borderRadius:
+                BorderRadius.circular(22),
+              ),
+              child: Column(
+                children: [
+                  const Text(
+                    "Monthly EMI",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight:
+                      FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    emi == 0.0
+                        ? "₹ 0"
+                        : "₹ ${emi.toStringAsFixed(2)}",
+                    style: const TextStyle(
+                      fontSize: 26,
+                      fontWeight:
+                      FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // 🔹 RESET BUTTON
+            OutlinedButton(
+              style:
+              OutlinedButton.styleFrom(
+                padding:
+                const EdgeInsets.symmetric(
+                    vertical: 14),
+                shape:
+                RoundedRectangleBorder(
+                  borderRadius:
+                  BorderRadius.circular(18),
+                ),
+              ),
+              onPressed: resetFields,
+              child: const Text(
+                "Reset",
+                style: TextStyle(fontSize: 16),
+              ),
+            ),
           ],
         ),
       ),

@@ -91,10 +91,10 @@ class _CategoryScreenState extends State<CategoryScreen> {
         body: Column(
           children: [
 
-            // 🔵 PREMIUM APPBAR
+            // 🔵 CLEAN PREMIUM HEADER
             Container(
               padding: const EdgeInsets.only(
-                  top: 50, left: 16, right: 16, bottom: 20),
+                  top: 55, left: 16, right: 16, bottom: 25),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Color(0xFF1565C0), Color(0xFF1E88E5)],
@@ -102,17 +102,19 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(25),
-                  bottomRight: Radius.circular(25),
+                  bottomLeft: Radius.circular(30),
+                  bottomRight: Radius.circular(30),
                 ),
               ),
               child: Row(
                 children: [
 
-                  // Exit
+                  // Exit Button
                   IconButton(
-                    icon: const Icon(Icons.exit_to_app,
-                        color: Colors.white),
+                    icon: const Icon(
+                      Icons.exit_to_app,
+                      color: Colors.white,
+                    ),
                     onPressed: confirmExit,
                   ),
 
@@ -121,115 +123,17 @@ class _CategoryScreenState extends State<CategoryScreen> {
                       child: Text(
                         "BankMate",
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
-                          letterSpacing: 1,
+                          letterSpacing: 1.5,
                         ),
                       ),
                     ),
                   ),
 
-                  // 📍 Nearby Banks
-                  IconButton(
-                    icon: const Icon(Icons.location_on,
-                        color: Colors.white),
-                    tooltip: "Nearby Banks",
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                          const NearbyBanksScreen(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // 🧮 EMI Calculator
-                  IconButton(
-                    icon: const Icon(Icons.calculate,
-                        color: Colors.white),
-                    tooltip: "EMI Calculator",
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                          const EmiCalculatorScreen(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // ⭐ Starred
-                  IconButton(
-                    icon: const Icon(Icons.star,
-                        color: Colors.white),
-                    tooltip: "Starred Banks",
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                          const StarredBanksScreen(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  // ⋮ 3-DOT MENU
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert,
-                        color: Colors.white),
-                    onSelected: (value) {
-                      if (value == 'Settings') {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                            const SettingsScreen(),
-                          ),
-                        );
-                      } else if (value == 'Search') {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                            const SearchScreen(),
-                          ),
-                        );
-                      } else if (value == 'Compose Email') {
-                        composeEmail();
-                      } else if (value == 'Feedback') {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                            const FeedbackScreen(),
-                          ),
-                        );
-                      }
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(
-                        value: 'Settings',
-                        child: Text('Settings'),
-                      ),
-                      PopupMenuItem(
-                        value: 'Search',
-                        child: Text('Search'),
-                      ),
-                      PopupMenuItem(
-                        value: 'Compose Email',
-                        child: Text('Compose Email'),
-                      ),
-                      PopupMenuItem(
-                        value: 'Feedback',
-                        child: Text('Feedback'),
-                      ),
-                    ],
-                  ),
+                  // Invisible space to balance layout
+                  const SizedBox(width: 48),
                 ],
               ),
             ),

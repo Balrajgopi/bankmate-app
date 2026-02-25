@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../database/db_helper.dart';
 
 class BankDetailScreen extends StatefulWidget {
@@ -10,195 +11,154 @@ class BankDetailScreen extends StatefulWidget {
   State<BankDetailScreen> createState() => _BankDetailScreenState();
 }
 
-class _BankDetailScreenState extends State<BankDetailScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _BankDetailScreenState extends State<BankDetailScreen> {
 
-  Map<String, dynamic>? interestRate;
-  Map<String, dynamic>? scheme;
-  Map<String, dynamic>? account;
-  Map<String, dynamic>? fees;
-  Map<String, dynamic>? branch;
+  String selectedLanguage = "English";
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 6, vsync: this);
-    loadBankDetails();
-  }
-
-  void loadBankDetails() async {
+  Future<Map<String, dynamic>> fetchDetails() async {
     final db = await DBHelper.database;
 
-    final rateList = await db.query(
-      'interest_rate',
+    final detail = (await db.query(
+      'bank_details',
       where: 'bankId = ?',
       whereArgs: [widget.bank['id']],
-    );
+    )).first;
 
-    final schemeList = await db.query(
-      'scheme',
-      where: 'bankId = ?',
-      whereArgs: [widget.bank['id']],
-    );
-
-    final accountList = await db.query(
-      'account_opening',
-      where: 'bankId = ?',
-      whereArgs: [widget.bank['id']],
-    );
-
-    final feesList = await db.query(
-      'fees',
-      where: 'bankId = ?',
-      whereArgs: [widget.bank['id']],
-    );
-
-    final branchList = await db.query(
-      'branch',
-      where: 'bankId = ?',
-      whereArgs: [widget.bank['id']],
-    );
-
-    setState(() {
-      interestRate = rateList.isNotEmpty ? rateList.first : null;
-      scheme = schemeList.isNotEmpty ? schemeList.first : null;
-      account = accountList.isNotEmpty ? accountList.first : null;
-      fees = feesList.isNotEmpty ? feesList.first : null;
-      branch = branchList.isNotEmpty ? branchList.first : null;
-    });
+    return detail;
   }
 
-  Widget noData() {
-    return const Center(
-      child: Text(
-        'No data available',
-        style: TextStyle(color: Colors.grey),
+  // 🌍 SIMPLE LOCAL TRANSLATION LOGIC
+  String translate(String text) {
+    if (selectedLanguage == "Hindi") {
+      return "हिंदी: $text";
+    } else if (selectedLanguage == "Marathi") {
+      return "मराठी: $text";
+    }
+    return text;
+  }
+
+  Future<void> openBranch(String url) async {
+    await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
+  }
+
+  Widget buildSection(String title, String content) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget infoText(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Divider(),
+          Text(
+            translate(content),
+            style: const TextStyle(fontSize: 14, height: 1.5),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.bank['name']),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabs: const [
-            Tab(text: 'Basic'),
-            Tab(text: 'Rates'),
-            Tab(text: 'Schemes'),
-            Tab(text: 'Account'),
-            Tab(text: 'Fees'),
-            Tab(text: 'Branch'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          // 🔹 BASIC INFO
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              widget.bank['history'],
-              style: const TextStyle(fontSize: 16),
-            ),
+        actions: [
+
+          // 🌍 LANGUAGE DROPDOWN
+          DropdownButton<String>(
+            value: selectedLanguage,
+            underline: const SizedBox(),
+            dropdownColor: Theme.of(context).cardColor,
+            items: const [
+              DropdownMenuItem(
+                value: "English",
+                child: Text("EN"),
+              ),
+              DropdownMenuItem(
+                value: "Hindi",
+                child: Text("HI"),
+              ),
+              DropdownMenuItem(
+                value: "Marathi",
+                child: Text("MR"),
+              ),
+            ],
+            onChanged: (value) {
+              setState(() {
+                selectedLanguage = value!;
+              });
+            },
           ),
 
-          // 🔹 INTEREST RATES
-          interestRate == null
-              ? noData()
-              : Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                infoText(
-                    'Savings Rate: ${interestRate!['savingsRate']}'),
-                infoText('FD Rate: ${interestRate!['fdRate']}'),
-                infoText('Loan Rate: ${interestRate!['loanRate']}'),
-              ],
-            ),
-          ),
-
-          // 🔹 SCHEMES
-          scheme == null
-              ? noData()
-              : Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  scheme!['schemeName'],
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  scheme!['description'],
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ],
-            ),
-          ),
-
-          // 🔹 ACCOUNT OPENING
-          account == null
-              ? noData()
-              : Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                infoText('Documents: ${account!['documents']}'),
-                infoText('Eligibility: ${account!['eligibility']}'),
-                infoText(
-                    'Minimum Balance: ${account!['minimumBalance']}'),
-              ],
-            ),
-          ),
-
-          // 🔹 FEES
-          fees == null
-              ? noData()
-              : Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              fees!['details'],
-              style: const TextStyle(fontSize: 16),
-            ),
-          ),
-
-          // 🔹 BRANCH / ATM
-          branch == null
-              ? noData()
-              : Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                infoText('Address: ${branch!['address']}'),
-                infoText('Contact: ${branch!['contact']}'),
-              ],
-            ),
-          ),
+          const SizedBox(width: 10),
         ],
+      ),
+
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: fetchDetails(),
+        builder: (context, snapshot) {
+
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final data = snapshot.data!;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+
+                buildSection("Basic Information", data['basic']),
+                buildSection("Interest Rates", data['rates']),
+                buildSection("Schemes", data['schemes']),
+                buildSection("Account Types", data['account']),
+                buildSection("Fees & Charges", data['fees']),
+                buildSection("Branch Network", data['branch']),
+
+                const SizedBox(height: 10),
+
+                // 🔗 BRANCH LOCATOR BUTTON
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  onPressed: () => openBranch(data['branchLocator']),
+                  icon: const Icon(Icons.location_on),
+                  label: const Text("Open Branch Locator"),
+                ),
+
+                const SizedBox(height: 30),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

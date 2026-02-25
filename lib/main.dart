@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'database/db_helper.dart';
 import 'database/sample_data.dart';
 import 'screens/category_screen.dart';
+import 'screens/main_navigation_screen.dart';
+import 'screens/splash_screen.dart';
 
 // 🌙 GLOBAL DARK MODE NOTIFIER
 ValueNotifier<bool> isDarkMode = ValueNotifier(false);
@@ -66,7 +68,7 @@ class BankMateApp extends StatelessWidget {
           ),
 
           themeMode: dark ? ThemeMode.dark : ThemeMode.light,
-          home: const ExitWrapper(),
+          home: const SplashScreen(),
         );
       },
     );
@@ -99,7 +101,7 @@ class ExitWrapper extends StatelessWidget {
           ),
         );
       },
-      child: const CategoryScreen(),
+      child: const MainNavigationScreen(),
     );
   }
 }

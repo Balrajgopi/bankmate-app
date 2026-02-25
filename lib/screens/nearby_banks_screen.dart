@@ -16,7 +16,7 @@ class _NearbyBanksScreenState extends State<NearbyBanksScreen> {
   List banks = [];
   bool isLoading = true;
 
-  final String apiKey = "Your API Key";
+  final String apiKey = "API Key";
 
   @override
   void initState() {

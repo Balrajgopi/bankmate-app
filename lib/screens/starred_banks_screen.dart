@@ -6,11 +6,14 @@ class StarredBanksScreen extends StatefulWidget {
   const StarredBanksScreen({super.key});
 
   @override
-  State<StarredBanksScreen> createState() => _StarredBanksScreenState();
+  State<StarredBanksScreen> createState() =>
+      _StarredBanksScreenState();
 }
 
-class _StarredBanksScreenState extends State<StarredBanksScreen> {
-  List<Map<String, dynamic>> starredBanks = [];
+class _StarredBanksScreenState
+    extends State<StarredBanksScreen> {
+
+  List<Map<String, dynamic>> banks = [];
 
   @override
   void initState() {
@@ -20,7 +23,6 @@ class _StarredBanksScreenState extends State<StarredBanksScreen> {
 
   void fetchStarredBanks() async {
     final db = await DBHelper.database;
-
     final result = await db.query(
       'bank',
       where: 'isBookmarked = ?',
@@ -28,67 +30,149 @@ class _StarredBanksScreenState extends State<StarredBanksScreen> {
     );
 
     setState(() {
-      starredBanks = result;
+      banks = result;
     });
   }
 
-  // ⭐ REMOVE STAR
-  void unstarBank(int bankId) async {
+  void toggleStar(int id) async {
     final db = await DBHelper.database;
 
     await db.update(
       'bank',
       {'isBookmarked': 0},
       where: 'id = ?',
-      whereArgs: [bankId],
+      whereArgs: [id],
     );
 
-    fetchStarredBanks(); // refresh UI
+    fetchStarredBanks();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Removed from Starred"),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+
+    final isDark =
+        Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Starred Banks'),
+        title: const Text("Starred Banks"),
       ),
-      body: starredBanks.isEmpty
-          ? const Center(child: Text('No starred banks'))
-          : ListView.builder(
-        itemCount: starredBanks.length,
-        itemBuilder: (context, index) {
-          final bank = starredBanks[index];
 
-          return Card(
+      body: banks.isEmpty
+          ? Center(
+        child: Column(
+          mainAxisAlignment:
+          MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.star_border,
+              size: 90,
+              color: Colors.grey.shade400,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              "No Starred Banks Yet",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "Tap the star icon on any bank\n"
+                  "to add it here.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      )
+          : ListView.builder(
+        padding:
+        const EdgeInsets.symmetric(
+            horizontal: 16, vertical: 20),
+        itemCount: banks.length,
+        itemBuilder: (context, index) {
+
+          final bank = banks[index];
+
+          return Container(
             margin:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            const EdgeInsets.only(bottom: 18),
+            padding:
+            const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? Colors.grey.shade900
+                  : Colors.white,
+              borderRadius:
+              BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black
+                      .withValues(alpha: 0.07),
+                  blurRadius: 12,
+                  offset:
+                  const Offset(0, 6),
+                ),
+              ],
+            ),
             child: ListTile(
+              contentPadding:
+              EdgeInsets.zero,
+
+              leading: CircleAvatar(
+                radius: 28,
+                backgroundColor:
+                Colors.amber.withValues(
+                    alpha: 0.15),
+                child: Text(
+                  bank['name'][0],
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight:
+                    FontWeight.bold,
+                    color: Colors.amber,
+                  ),
+                ),
+              ),
+
               title: Text(
                 bank['name'],
                 style: const TextStyle(
-                  fontWeight: FontWeight.w600,
+                  fontWeight:
+                  FontWeight.bold,
+                  fontSize: 17,
                 ),
               ),
-              subtitle: Text(bank['contact']),
 
-              // ⭐ SINGLE STAR (UNSTAR ACTION)
+              subtitle:
+              Text(bank['contact']),
+
               trailing: IconButton(
                 icon: const Icon(
                   Icons.star,
                   color: Colors.amber,
                 ),
-                tooltip: 'Remove from starred',
-                onPressed: () {
-                  unstarBank(bank['id']);
-                },
+                onPressed: () =>
+                    toggleStar(bank['id']),
               ),
 
-              // Open bank details
               onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => BankDetailScreen(bank: bank),
+                    builder: (_) =>
+                        BankDetailScreen(
+                            bank: bank),
                   ),
                 );
               },
