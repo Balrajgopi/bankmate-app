@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../database/db_helper.dart';
 import 'bank_list_screen.dart';
 import 'starred_banks_screen.dart';
 import 'emi_calculator_screen.dart';
 import 'settings_screen.dart';
-import '../main.dart';
+import 'search_screen.dart';
+import 'feedback_screen.dart';
+import 'nearby_banks_screen.dart';
 
 class CategoryScreen extends StatefulWidget {
   const CategoryScreen({super.key});
@@ -23,159 +26,323 @@ class _CategoryScreenState extends State<CategoryScreen> {
     _future = DBHelper.database.then((db) => db.query('category'));
   }
 
-  void showToast(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
-
   Future<void> confirmExit() async {
-    final exit = await showDialog<bool>(
+    final shouldExit = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Exit BankMate'),
         content: const Text('Do you want to exit the app?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: const Text('No'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Yes'),
           ),
         ],
       ),
     );
 
-    if (exit == true) {
+    if (shouldExit == true) {
       SystemNavigator.pop();
     }
   }
 
-  void toggleDarkMode() {
-    isDarkMode.value = !isDarkMode.value;
-    saveThemePreference(isDarkMode.value);
+  IconData getCategoryIcon(String name) {
+    if (name.contains('Public')) return Icons.account_balance;
+    if (name.contains('Government')) return Icons.gavel;
+    return Icons.groups;
+  }
+
+  Future<void> composeEmail() async {
+    final Uri emailUri = Uri.parse(
+      "mailto:rupeshghongade33@gmail.com"
+          "?subject=Feedback for BankMate App"
+          "&body=Hello,%0A%0AI would like to share feedback:%0A",
+    );
+
+    try {
+      await launchUrl(
+        emailUri,
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("No email app found on this device"),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return PopScope(
       canPop: false,
-      onPopInvoked: (_) => confirmExit(),
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) confirmExit();
+      },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Bank Categories'),
-          leading: IconButton(
-            icon: const Icon(Icons.exit_to_app),
-            onPressed: confirmExit,
-          ),
-          actions: [
+        body: Column(
+          children: [
 
-            IconButton(
-              icon: Icon(
-                isDarkMode.value ? Icons.light_mode : Icons.dark_mode,
+            // 🔵 PREMIUM APPBAR
+            Container(
+              padding: const EdgeInsets.only(
+                  top: 50, left: 16, right: 16, bottom: 20),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF1565C0), Color(0xFF1E88E5)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(25),
+                  bottomRight: Radius.circular(25),
+                ),
               ),
-              onPressed: toggleDarkMode,
-            ),
+              child: Row(
+                children: [
 
-            IconButton(
-              icon: const Icon(Icons.calculate),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const EmiCalculatorScreen(),
+                  // Exit
+                  IconButton(
+                    icon: const Icon(Icons.exit_to_app,
+                        color: Colors.white),
+                    onPressed: confirmExit,
                   ),
-                );
-              },
-            ),
 
-            IconButton(
-              icon: const Icon(Icons.star),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const StarredBanksScreen(),
-                  ),
-                );
-              },
-            ),
-
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'Settings') {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const SettingsScreen(),
+                  const Expanded(
+                    child: Center(
+                      child: Text(
+                        "BankMate",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 1,
+                        ),
+                      ),
                     ),
-                  );
-                } else if (value == 'Search') {
-                  showToast('Search clicked');
-                } else if (value == 'Compose Email') {
-                  showToast('Compose Email clicked');
-                } else if (value == 'Feedback') {
-                  showToast('Feedback clicked');
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: 'Settings',
-                  child: Text('Settings'),
-                ),
-                PopupMenuItem(
-                  value: 'Search',
-                  child: Text('Search'),
-                ),
-                PopupMenuItem(
-                  value: 'Compose Email',
-                  child: Text('Compose Email'),
-                ),
-                PopupMenuItem(
-                  value: 'Feedback',
-                  child: Text('Feedback'),
-                ),
-              ],
-            ),
-          ],
-        ),
-        body: FutureBuilder<List<Map<String, dynamic>>>(
-          future: _future,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
+                  ),
 
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text('No categories found'));
-            }
-
-            return ListView(
-              children: snapshot.data!
-                  .map(
-                    (c) => Card(
-                  child: ListTile(
-                    title: Text(c['name']),
-                    trailing: const Icon(Icons.arrow_forward_ios),
-                    onTap: () {
+                  // 📍 Nearby Banks
+                  IconButton(
+                    icon: const Icon(Icons.location_on,
+                        color: Colors.white),
+                    tooltip: "Nearby Banks",
+                    onPressed: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => BankListScreen(
-                            categoryId: c['id'],
-                            categoryName: c['name'],
-                          ),
+                          builder: (_) =>
+                          const NearbyBanksScreen(),
                         ),
                       );
                     },
                   ),
-                ),
-              )
-                  .toList(),
-            );
-          },
+
+                  // 🧮 EMI Calculator
+                  IconButton(
+                    icon: const Icon(Icons.calculate,
+                        color: Colors.white),
+                    tooltip: "EMI Calculator",
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                          const EmiCalculatorScreen(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  // ⭐ Starred
+                  IconButton(
+                    icon: const Icon(Icons.star,
+                        color: Colors.white),
+                    tooltip: "Starred Banks",
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                          const StarredBanksScreen(),
+                        ),
+                      );
+                    },
+                  ),
+
+                  // ⋮ 3-DOT MENU
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert,
+                        color: Colors.white),
+                    onSelected: (value) {
+                      if (value == 'Settings') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                            const SettingsScreen(),
+                          ),
+                        );
+                      } else if (value == 'Search') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                            const SearchScreen(),
+                          ),
+                        );
+                      } else if (value == 'Compose Email') {
+                        composeEmail();
+                      } else if (value == 'Feedback') {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                            const FeedbackScreen(),
+                          ),
+                        );
+                      }
+                    },
+                    itemBuilder: (context) => const [
+                      PopupMenuItem(
+                        value: 'Settings',
+                        child: Text('Settings'),
+                      ),
+                      PopupMenuItem(
+                        value: 'Search',
+                        child: Text('Search'),
+                      ),
+                      PopupMenuItem(
+                        value: 'Compose Email',
+                        child: Text('Compose Email'),
+                      ),
+                      PopupMenuItem(
+                        value: 'Feedback',
+                        child: Text('Feedback'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            // CATEGORY LIST
+            Expanded(
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: _future,
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return const Center(
+                        child: CircularProgressIndicator());
+                  }
+
+                  return ListView.builder(
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: snapshot.data!.length,
+                    itemBuilder: (context, index) {
+                      final category =
+                      snapshot.data![index];
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 20),
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.grey.shade900
+                              : Colors.white,
+                          borderRadius:
+                          BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black
+                                  .withValues(alpha: 0.08),
+                              blurRadius: 10,
+                              offset:
+                              const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            radius: 28,
+                            backgroundColor:
+                            Colors.blue.withValues(
+                                alpha: 0.1),
+                            child: Icon(
+                              getCategoryIcon(
+                                  category['name']),
+                              size: 28,
+                              color: Colors.blue,
+                            ),
+                          ),
+                          title: Text(
+                            category['name'],
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight:
+                              FontWeight.bold,
+                            ),
+                          ),
+                          subtitle: const Text(
+                              "Explore available banks"),
+                          trailing: const Icon(
+                              Icons.arrow_forward_ios),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    BankListScreen(
+                                      categoryId:
+                                      category['id'],
+                                      categoryName:
+                                      category['name'],
+                                    ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+
+            // Footer
+            Container(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                children: const [
+                  Divider(),
+                  SizedBox(height: 6),
+                  Text(
+                    "BankMate v1.0",
+                    style: TextStyle(
+                        fontWeight:
+                        FontWeight.bold),
+                  ),
+                  Text(
+                    "Offline Banking Guide",
+                    style: TextStyle(
+                        color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
