@@ -1,256 +1,324 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../main.dart';
-import 'search_screen.dart';
-import 'feedback_screen.dart';
 import '../database/db_helper.dart';
+import '../main.dart';
+import 'login_screen.dart';
+import 'starred_banks_screen.dart';
+import 'feedback_screen.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
-  // 🔹 Compose Email
-  Future<void> composeEmail(BuildContext context) async {
-    final Uri emailUri = Uri.parse(
-      "mailto:rupeshghongade33@gmail.com"
-          "?subject=Feedback for BankMate App"
-          "&body=Hello,%0A%0AI would like to share feedback:%0A",
-    );
+  @override
+  State<SettingsScreen> createState() =>
+      _SettingsScreenState();
+}
 
-    try {
-      await launchUrl(
-        emailUri,
-        mode: LaunchMode.externalApplication,
-      );
-    } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("No email app found"),
-        ),
-      );
-    }
+class _SettingsScreenState
+    extends State<SettingsScreen> {
+
+  String userName = "User";
+
+  @override
+  void initState() {
+    super.initState();
+    loadUser();
   }
 
-  // 🔹 About Dialog
-  void showAboutDialogBox(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("About BankMate"),
-        content: const Text(
-          "BankMate is a student banking guide app.\n\n"
-              "Features:\n"
-              "• Bank Categories\n"
-              "• EMI Calculator\n"
-              "• Starred Banks\n"
-              "• Nearby Banks (GPS)\n"
-              "• Dark Mode\n\n"
-              "Version: 1.0.0",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("OK"),
-          ),
-        ],
-      ),
-    );
+  Future<void> loadUser() async {
+    final prefs =
+    await SharedPreferences.getInstance();
+    setState(() {
+      userName =
+          prefs.getString('userName') ?? "User";
+    });
   }
 
-  // 🔹 Clear All Starred Banks
-  Future<void> clearStarredBanks(BuildContext context) async {
+  // ===============================
+  // EMAIL
+  // ===============================
+  Future<void> composeEmail() async {
+    final Uri emailUri = Uri(
+      scheme: 'mailto',
+      path: 'rupeshghongade33@gmail.com',
+      query:
+      'subject=BankMate App Feedback',
+    );
+
+    await launchUrl(emailUri);
+  }
+
+  // ===============================
+  // RESET STARRED DATA
+  // ===============================
+  Future<void> resetStarredData() async {
     final db = await DBHelper.database;
 
     await db.update(
       'bank',
       {'isBookmarked': 0},
-      where: 'isBookmarked = ?',
-      whereArgs: [1],
     );
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
       const SnackBar(
-        content: Text("All starred banks cleared successfully"),
+        content:
+        Text("Starred banks cleared"),
       ),
     );
   }
 
-  Widget sectionTitle(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10, left: 4),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.grey,
-        ),
+  // ===============================
+  // LOGOUT
+  // ===============================
+  Future<void> logout() async {
+    final prefs =
+    await SharedPreferences.getInstance();
+    await prefs.setBool('isLoggedIn', false);
+    await prefs.remove('userName');
+
+    if (!mounted) return;
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+        const LoginScreen(),
       ),
+          (route) => false,
     );
   }
 
-  Widget settingsCard(BuildContext context, Widget child) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+  void showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Logout"),
+        content: const Text(
+            "Are you sure you want to logout?"),
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              logout();
+            },
+            child: const Text("Logout"),
           ),
         ],
       ),
-      child: child,
+    );
+  }
+
+  void showAboutDialogBox() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("About BankMate"),
+        content: const Text(
+          "BankMate\n\n"
+              "Offline Banking Guide App\n"
+              "Version 1.0.0\n\n"
+              "Developed for educational purpose.\n"
+              "Helps compare banks, calculate EMI,\n"
+              "and explore banking information.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context),
+            child: const Text("OK"),
+          )
+        ],
+      ),
+    );
+  }
+
+  void showResetDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title:
+        const Text("Reset Starred Banks"),
+        content: const Text(
+            "This will remove all starred banks.\n\nContinue?"),
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              resetStarredData();
+            },
+            child: const Text("Reset"),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Settings"),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
+      appBar:
+      AppBar(title: const Text("Settings")),
+      body: ListView(
+        padding:
+        const EdgeInsets.all(16),
+        children: [
 
-            // 🔹 Appearance
-            sectionTitle("Appearance"),
+          // ===============================
+          // USER PROFILE SECTION
+          // ===============================
+          Card(
+            shape:
+            RoundedRectangleBorder(
+              borderRadius:
+              BorderRadius.circular(18),
+            ),
+            child: ListTile(
+              leading:
+              const CircleAvatar(
+                radius: 28,
+                child:
+                Icon(Icons.person),
+              ),
+              title: Text(
+                userName,
+                style: const TextStyle(
+                  fontWeight:
+                  FontWeight.bold,
+                ),
+              ),
+              subtitle:
+              const Text("Logged In User"),
+            ),
+          ),
 
-            settingsCard(
-              context,
-              ValueListenableBuilder<bool>(
-                valueListenable: isDarkMode,
-                builder: (context, dark, _) {
-                  return SwitchListTile(
-                    value: dark,
-                    title: const Text("Dark Mode"),
-                    subtitle: const Text("Enable dark theme"),
-                    secondary: const Icon(Icons.dark_mode),
-                    onChanged: (value) {
-                      isDarkMode.value = value;
-                      saveThemePreference(value);
-                    },
-                  );
+          const SizedBox(height: 20),
+
+          // ===============================
+          // DARK MODE
+          // ===============================
+          ValueListenableBuilder<bool>(
+            valueListenable: isDarkMode,
+            builder:
+                (context, dark, _) {
+              return SwitchListTile(
+                value: dark,
+                title:
+                const Text("Dark Mode"),
+                onChanged: (value) {
+                  isDarkMode.value =
+                      value;
+                  saveThemePreference(
+                      value);
                 },
-              ),
-            ),
+              );
+            },
+          ),
 
-            // 🔹 Features
-            sectionTitle("Features"),
+          const Divider(),
 
-            settingsCard(
-              context,
-              Column(
-                children: [
+          // ===============================
+          // STARRED BANKS
+          // ===============================
+          ListTile(
+            leading:
+            const Icon(Icons.star),
+            title:
+            const Text("Starred Banks"),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                  const StarredBanksScreen(),
+                ),
+              );
+            },
+          ),
 
-                  ListTile(
-                    leading: const Icon(Icons.search),
-                    title: const Text("Search"),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SearchScreen(),
-                        ),
-                      );
-                    },
-                  ),
+          // ===============================
+          // EMAIL
+          // ===============================
+          ListTile(
+            leading:
+            const Icon(Icons.email),
+            title:
+            const Text("Contact Developer"),
+            onTap: composeEmail,
+          ),
 
-                  const Divider(),
+          // ===============================
+          // FEEDBACK
+          // ===============================
+          ListTile(
+            leading:
+            const Icon(Icons.feedback),
+            title:
+            const Text("Feedback"),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                  const FeedbackScreen(),
+                ),
+              );
+            },
+          ),
 
-                  ListTile(
-                    leading: const Icon(Icons.email_outlined),
-                    title: const Text("Compose Email"),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () => composeEmail(context),
-                  ),
+          // ===============================
+          // ABOUT
+          // ===============================
+          ListTile(
+            leading:
+            const Icon(Icons.info),
+            title:
+            const Text("About App"),
+            onTap: showAboutDialogBox,
+          ),
 
-                  const Divider(),
+          // ===============================
+          // RESET
+          // ===============================
+          ListTile(
+            leading:
+            const Icon(Icons.refresh),
+            title:
+            const Text("Reset Starred Banks"),
+            onTap: showResetDialog,
+          ),
 
-                  ListTile(
-                    leading: const Icon(Icons.feedback_outlined),
-                    title: const Text("Feedback"),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const FeedbackScreen(),
-                        ),
-                      );
-                    },
-                  ),
+          const Divider(),
 
-                  const Divider(),
-
-                  ListTile(
-                    leading: const Icon(Icons.delete_outline),
-                    title: const Text("Clear Starred Banks"),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          title: const Text("Clear Starred Banks"),
-                          content: const Text(
-                            "Are you sure you want to remove all starred banks?",
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () =>
-                                  Navigator.pop(context),
-                              child: const Text("Cancel"),
-                            ),
-                            TextButton(
-                              onPressed: () async {
-                                Navigator.pop(context);
-                                await clearStarredBanks(context);
-                              },
-                              child: const Text("Yes"),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            // 🔹 General
-            sectionTitle("General"),
-
-            settingsCard(
-              context,
-              ListTile(
-                leading: const Icon(Icons.info_outline),
-                title: const Text("About App"),
-                trailing:
-                const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () =>
-                    showAboutDialogBox(context),
-              ),
-            ),
-
-            // 🔹 App Info
-            sectionTitle("App Info"),
-
-            settingsCard(
-              context,
-              const ListTile(
-                leading: Icon(Icons.verified),
-                title: Text("Version"),
-                subtitle: Text("1.0.0"),
-              ),
-            ),
-          ],
-        ),
+          // ===============================
+          // LOGOUT
+          // ===============================
+          ListTile(
+            leading:
+            const Icon(Icons.logout),
+            title:
+            const Text("Logout"),
+            onTap: showLogoutDialog,
+          ),
+        ],
       ),
     );
   }

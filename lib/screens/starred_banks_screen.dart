@@ -14,6 +14,7 @@ class _StarredBanksScreenState
     extends State<StarredBanksScreen> {
 
   List<Map<String, dynamic>> banks = [];
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -21,7 +22,7 @@ class _StarredBanksScreenState
     fetchStarredBanks();
   }
 
-  void fetchStarredBanks() async {
+  Future<void> fetchStarredBanks() async {
     final db = await DBHelper.database;
     final result = await db.query(
       'bank',
@@ -31,10 +32,11 @@ class _StarredBanksScreenState
 
     setState(() {
       banks = result;
+      isLoading = false;
     });
   }
 
-  void toggleStar(int id) async {
+  Future<void> toggleStar(int id) async {
     final db = await DBHelper.database;
 
     await db.update(
@@ -64,7 +66,9 @@ class _StarredBanksScreenState
         title: const Text("Starred Banks"),
       ),
 
-      body: banks.isEmpty
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : banks.isEmpty
           ? Center(
         child: Column(
           mainAxisAlignment:
@@ -85,100 +89,70 @@ class _StarredBanksScreenState
             ),
             const SizedBox(height: 8),
             const Text(
-              "Tap the star icon on any bank\n"
-                  "to add it here.",
+              "Tap the star icon on any bank\nto add it here.",
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey,
-              ),
+              style: TextStyle(color: Colors.grey),
             ),
           ],
         ),
       )
-          : ListView.builder(
-        padding:
-        const EdgeInsets.symmetric(
-            horizontal: 16, vertical: 20),
-        itemCount: banks.length,
-        itemBuilder: (context, index) {
+          : RefreshIndicator(
+        onRefresh: fetchStarredBanks,
+        child: ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: banks.length,
+          itemBuilder: (context, index) {
 
-          final bank = banks[index];
+            final bank = banks[index];
 
-          return Container(
-            margin:
-            const EdgeInsets.only(bottom: 18),
-            padding:
-            const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.grey.shade900
-                  : Colors.white,
-              borderRadius:
-              BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black
-                      .withValues(alpha: 0.07),
-                  blurRadius: 12,
-                  offset:
-                  const Offset(0, 6),
+            return Card(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+              margin: const EdgeInsets.only(bottom: 16),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor:
+                  Colors.amber.withOpacity(0.15),
+                  child: Text(
+                    bank['name'][0],
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.amber,
+                    ),
+                  ),
                 ),
-              ],
-            ),
-            child: ListTile(
-              contentPadding:
-              EdgeInsets.zero,
-
-              leading: CircleAvatar(
-                radius: 28,
-                backgroundColor:
-                Colors.amber.withValues(
-                    alpha: 0.15),
-                child: Text(
-                  bank['name'][0],
+                title: Text(
+                  bank['name'],
                   style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight:
-                    FontWeight.bold,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle:
+                const Text("Tap to view details"),
+                trailing: IconButton(
+                  icon: const Icon(
+                    Icons.star,
                     color: Colors.amber,
                   ),
+                  onPressed: () =>
+                      toggleStar(bank['id']),
                 ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          BankDetailScreen(bank: bank),
+                    ),
+                  ).then((_) {
+                    fetchStarredBanks();
+                  });
+                },
               ),
-
-              title: Text(
-                bank['name'],
-                style: const TextStyle(
-                  fontWeight:
-                  FontWeight.bold,
-                  fontSize: 17,
-                ),
-              ),
-
-              subtitle:
-              Text(bank['contact']),
-
-              trailing: IconButton(
-                icon: const Icon(
-                  Icons.star,
-                  color: Colors.amber,
-                ),
-                onPressed: () =>
-                    toggleStar(bank['id']),
-              ),
-
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        BankDetailScreen(
-                            bank: bank),
-                  ),
-                );
-              },
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

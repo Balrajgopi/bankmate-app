@@ -13,69 +13,76 @@ class BankDetailScreen extends StatefulWidget {
 
 class _BankDetailScreenState extends State<BankDetailScreen> {
 
-  String selectedLanguage = "English";
-
-  Future<Map<String, dynamic>> fetchDetails() async {
+  Future<Map<String, dynamic>?> fetchDetails() async {
     final db = await DBHelper.database;
 
-    final detail = (await db.query(
+    final result = await db.query(
       'bank_details',
       where: 'bankId = ?',
       whereArgs: [widget.bank['id']],
-    )).first;
-
-    return detail;
-  }
-
-  // 🌍 SIMPLE LOCAL TRANSLATION LOGIC
-  String translate(String text) {
-    if (selectedLanguage == "Hindi") {
-      return "हिंदी: $text";
-    } else if (selectedLanguage == "Marathi") {
-      return "मराठी: $text";
-    }
-    return text;
-  }
-
-  Future<void> openBranch(String url) async {
-    await launchUrl(
-      Uri.parse(url),
-      mode: LaunchMode.externalApplication,
     );
+
+    if (result.isNotEmpty) {
+      return result.first;
+    }
+    return null;
   }
 
-  Widget buildSection(String title, String content) {
+  Widget sectionCard(String title, String content, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: Colors.blue),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-          const Divider(),
+          const SizedBox(height: 12),
           Text(
-            translate(content),
-            style: const TextStyle(fontSize: 14, height: 1.5),
+            content,
+            style: const TextStyle(
+              height: 1.6,
+              fontSize: 15,
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> openBranchLocator(String url) async {
+    await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
     );
   }
 
@@ -84,40 +91,20 @@ class _BankDetailScreenState extends State<BankDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.bank['name']),
-        actions: [
-
-          // 🌍 LANGUAGE DROPDOWN
-          DropdownButton<String>(
-            value: selectedLanguage,
-            underline: const SizedBox(),
-            dropdownColor: Theme.of(context).cardColor,
-            items: const [
-              DropdownMenuItem(
-                value: "English",
-                child: Text("EN"),
-              ),
-              DropdownMenuItem(
-                value: "Hindi",
-                child: Text("HI"),
-              ),
-              DropdownMenuItem(
-                value: "Marathi",
-                child: Text("MR"),
-              ),
-            ],
-            onChanged: (value) {
-              setState(() {
-                selectedLanguage = value!;
-              });
-            },
+        elevation: 0,
+        centerTitle: true,
+        title: Text(
+          widget.bank['name'],
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
           ),
-
-          const SizedBox(width: 10),
-        ],
+        ),
       ),
 
-      body: FutureBuilder<Map<String, dynamic>>(
+      body: FutureBuilder<Map<String, dynamic>?>(
         future: fetchDetails(),
         builder: (context, snapshot) {
 
@@ -127,34 +114,67 @@ class _BankDetailScreenState extends State<BankDetailScreen> {
 
           final data = snapshot.data!;
 
-          return SingleChildScrollView(
+          return Padding(
             padding: const EdgeInsets.all(16),
-            child: Column(
+            child: ListView(
               children: [
 
-                buildSection("Basic Information", data['basic']),
-                buildSection("Interest Rates", data['rates']),
-                buildSection("Schemes", data['schemes']),
-                buildSection("Account Types", data['account']),
-                buildSection("Fees & Charges", data['fees']),
-                buildSection("Branch Network", data['branch']),
+                sectionCard(
+                  "Basic Information",
+                  data['basic'] ?? "",
+                  Icons.info_outline,
+                ),
+
+                sectionCard(
+                  "Interest Rates",
+                  data['rates'] ?? "",
+                  Icons.percent,
+                ),
+
+                sectionCard(
+                  "Schemes",
+                  data['schemes'] ?? "",
+                  Icons.assignment,
+                ),
+
+                sectionCard(
+                  "Account Types",
+                  data['account'] ?? "",
+                  Icons.account_balance_wallet,
+                ),
+
+                sectionCard(
+                  "Fees & Charges",
+                  data['fees'] ?? "",
+                  Icons.currency_rupee,
+                ),
+
+                sectionCard(
+                  "Branch Network",
+                  data['branch'] ?? "",
+                  Icons.location_on,
+                ),
 
                 const SizedBox(height: 10),
 
-                // 🔗 BRANCH LOCATOR BUTTON
-                ElevatedButton.icon(
+                // 🔵 PREMIUM BUTTON
+                ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 50),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  onPressed: () => openBranch(data['branchLocator']),
-                  icon: const Icon(Icons.location_on),
-                  label: const Text("Open Branch Locator"),
+                  onPressed: () {
+                    openBranchLocator(data['branchLocator']);
+                  },
+                  child: const Text(
+                    "Open Branch Locator",
+                    style: TextStyle(fontSize: 16),
+                  ),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 25),
               ],
             ),
           );

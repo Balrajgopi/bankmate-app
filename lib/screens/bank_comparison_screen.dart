@@ -14,31 +14,28 @@ class BankComparisonScreen extends StatelessWidget {
   Future<Map<String, dynamic>> fetchExtraData(int bankId) async {
     final db = await DBHelper.database;
 
-    final rate = (await db.query(
+    final rateResult = await db.query(
       'interest_rate',
       where: 'bankId = ?',
       whereArgs: [bankId],
-    ))
-        .first;
+    );
 
-    final account = (await db.query(
+    final accountResult = await db.query(
       'account_opening',
       where: 'bankId = ?',
       whereArgs: [bankId],
-    ))
-        .first;
+    );
 
-    final fees = (await db.query(
+    final feesResult = await db.query(
       'fees',
       where: 'bankId = ?',
       whereArgs: [bankId],
-    ))
-        .first;
+    );
 
     return {
-      'rate': rate,
-      'account': account,
-      'fees': fees,
+      'rate': rateResult.isNotEmpty ? rateResult.first : {},
+      'account': accountResult.isNotEmpty ? accountResult.first : {},
+      'fees': feesResult.isNotEmpty ? feesResult.first : {},
     };
   }
 
@@ -53,7 +50,7 @@ class BankComparisonScreen extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              value1,
+              value1.isEmpty ? "-" : value1,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontWeight: FontWeight.w500,
@@ -72,7 +69,7 @@ class BankComparisonScreen extends StatelessWidget {
           ),
           Expanded(
             child: Text(
-              value2,
+              value2.isEmpty ? "-" : value2,
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontWeight: FontWeight.w500,
@@ -113,8 +110,6 @@ class BankComparisonScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark =
-        Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -126,6 +121,7 @@ class BankComparisonScreen extends StatelessWidget {
           fetchExtraData(bank2['id']),
         ]),
         builder: (context, snapshot) {
+
           if (!snapshot.hasData) {
             return const Center(
                 child: CircularProgressIndicator());
@@ -136,12 +132,20 @@ class BankComparisonScreen extends StatelessWidget {
           final data2 =
           snapshot.data![1] as Map<String, dynamic>;
 
+          final rate1 = data1['rate'] ?? {};
+          final rate2 = data2['rate'] ?? {};
+
+          final account1 = data1['account'] ?? {};
+          final account2 = data2['account'] ?? {};
+
+          final fees1 = data1['fees'] ?? {};
+          final fees2 = data2['fees'] ?? {};
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
 
-                // 🔵 Bank Headers
                 Row(
                   children: [
                     bankHeader(
@@ -168,40 +172,40 @@ class BankComparisonScreen extends StatelessWidget {
 
                         comparisonRow(
                           "Savings Rate",
-                          "${data1['rate']['savingsRate']}%",
-                          "${data2['rate']['savingsRate']}%",
+                          rate1['savingsRate']?.toString() ?? "",
+                          rate2['savingsRate']?.toString() ?? "",
                         ),
 
                         const Divider(),
 
                         comparisonRow(
                           "FD Rate",
-                          "${data1['rate']['fdRate']}%",
-                          "${data2['rate']['fdRate']}%",
+                          rate1['fdRate']?.toString() ?? "",
+                          rate2['fdRate']?.toString() ?? "",
                         ),
 
                         const Divider(),
 
                         comparisonRow(
                           "Loan Rate",
-                          "${data1['rate']['loanRate']}%",
-                          "${data2['rate']['loanRate']}%",
+                          rate1['loanRate']?.toString() ?? "",
+                          rate2['loanRate']?.toString() ?? "",
                         ),
 
                         const Divider(),
 
                         comparisonRow(
                           "Minimum Balance",
-                          "${data1['account']['minimumBalance']}",
-                          "${data2['account']['minimumBalance']}",
+                          account1['minimumBalance']?.toString() ?? "",
+                          account2['minimumBalance']?.toString() ?? "",
                         ),
 
                         const Divider(),
 
                         comparisonRow(
                           "Fees",
-                          "${data1['fees']['details']}",
-                          "${data2['fees']['details']}",
+                          fees1['details']?.toString() ?? "",
+                          fees2['details']?.toString() ?? "",
                         ),
                       ],
                     ),

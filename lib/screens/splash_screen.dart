@@ -1,135 +1,85 @@
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'login_screen.dart';
 import 'main_navigation_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() =>
-      _SplashScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState
-    extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
-  late Animation<double> _fadeAnimation;
+class _SplashScreenState extends State<SplashScreen> {
 
   @override
   void initState() {
     super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    );
-
-    _scaleAnimation = Tween<double>(
-      begin: 0.7,
-      end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutBack,
-      ),
-    );
-
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(_controller);
-
-    _controller.forward();
-
-    Timer(
-      const Duration(seconds: 3),
-          () {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-            const MainNavigationScreen(),
-          ),
-        );
-      },
-    );
+    checkLogin();
   }
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
+  Future<void> checkLogin() async {
+    await Future.delayed(const Duration(seconds: 2));
+
+    final prefs = await SharedPreferences.getInstance();
+    final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
+
+    if (!mounted) return;
+
+    if (isLoggedIn) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const MainNavigationScreen(),
+        ),
+      );
+    } else {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(),
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
 
-    final isDark =
-        Theme.of(context).brightness ==
-            Brightness.dark;
-
     return Scaffold(
-      backgroundColor:
-      isDark ? Colors.black : Colors.white,
-      body: Center(
-        child: AnimatedBuilder(
-          animation: _controller,
-          builder: (context, child) {
-            return FadeTransition(
-              opacity: _fadeAnimation,
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: Column(
-                  mainAxisAlignment:
-                  MainAxisAlignment.center,
-                  children: [
-
-                    Container(
-                      padding:
-                      const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.blue,
-                        borderRadius:
-                        BorderRadius.circular(25),
-                      ),
-                      child: const Icon(
-                        Icons.account_balance,
-                        size: 70,
-                        color: Colors.white,
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    const Text(
-                      "BankMate",
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight:
-                        FontWeight.bold,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    Text(
-                      "Your Smart Banking Guide",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: isDark
-                            ? Colors.grey
-                            : Colors.black54,
-                      ),
-                    ),
-                  ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF1565C0), Color(0xFF1E88E5)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.account_balance,
+                size: 90,
+                color: Colors.white,
+              ),
+              SizedBox(height: 20),
+              Text(
+                "BankMate",
+                style: TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
-            );
-          },
+              SizedBox(height: 10),
+              CircularProgressIndicator(
+                color: Colors.white,
+              )
+            ],
+          ),
         ),
       ),
     );

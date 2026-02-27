@@ -5,6 +5,7 @@ class SampleData {
   static Future<void> insertInitialData() async {
     final db = await DBHelper.database;
 
+    // 🔥 CLEAR ONLY BANK RELATED TABLES
     await db.delete('category');
     await db.delete('bank');
     await db.delete('bank_details');
@@ -12,9 +13,20 @@ class SampleData {
     await db.delete('account_opening');
     await db.delete('fees');
 
+    // ⚠ DO NOT DELETE USERS IN PRODUCTION
+    // Uncomment below ONLY during testing
+    // await db.delete('users');
+
+    // =============================
+    // INSERT CATEGORIES
+    // =============================
     await db.insert('category', {'id': 1, 'name': 'Public Sector'});
     await db.insert('category', {'id': 2, 'name': 'Government Bank'});
     await db.insert('category', {'id': 3, 'name': 'Co-operative Bank'});
+
+    // =============================
+    // INSERT ALL 12 BANKS
+    // =============================
 
     await _insertSBI(db);
     await _insertPNB(db);
@@ -89,9 +101,7 @@ class SampleData {
     });
   }
 
-  // ==============================================
-  // PUBLIC SECTOR BANKS
-  // ==============================================
+  // ================= PUBLIC SECTOR =================
 
   static Future<void> _insertSBI(db) async {
     await _insertBankData(
@@ -173,9 +183,7 @@ class SampleData {
     );
   }
 
-  // ==============================================
-  // GOVERNMENT BANKS
-  // ==============================================
+  // ================= GOVERNMENT =================
 
   static Future<void> _insertBankOfMaharashtra(db) async {
     await _insertBankData(
@@ -257,9 +265,7 @@ class SampleData {
     );
   }
 
-  // ==============================================
-  // CO-OPERATIVE BANKS
-  // ==============================================
+  // ================= CO-OPERATIVE =================
 
   static Future<void> _insertSaraswat(db) async {
     await _insertBankData(
