@@ -80,10 +80,23 @@ class _BankDetailScreenState extends State<BankDetailScreen> {
   }
 
   Future<void> openBranchLocator(String url) async {
+    if (url.isEmpty) return;
     await launchUrl(
       Uri.parse(url),
       mode: LaunchMode.externalApplication,
     );
+  }
+
+  Future<void> findNearbyBranches(String bankName) async {
+    final query = Uri.encodeComponent("$bankName near me");
+    final googleMapsUrl = "https://www.google.com/maps/search/?api= &query=$query";
+    
+    if (await canLaunchUrl(Uri.parse(googleMapsUrl))) {
+      await launchUrl(
+        Uri.parse(googleMapsUrl),
+        mode: LaunchMode.externalApplication,
+      );
+    }
   }
 
   @override
@@ -157,21 +170,49 @@ class _BankDetailScreenState extends State<BankDetailScreen> {
 
                 const SizedBox(height: 10),
 
-                // 🔵 PREMIUM BUTTON
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                // 🔵 ACTION BUTTONS
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: () {
+                          openBranchLocator(data['branchLocator'] ?? "");
+                        },
+                        icon: const Icon(Icons.language),
+                        label: const Text(
+                          "Web Locator",
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      ),
                     ),
-                  ),
-                  onPressed: () {
-                    openBranchLocator(data['branchLocator']);
-                  },
-                  child: const Text(
-                    "Open Branch Locator",
-                    style: TextStyle(fontSize: 16),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        onPressed: () {
+                          findNearbyBranches(widget.bank['name']);
+                        },
+                        icon: const Icon(Icons.map_outlined),
+                        label: const Text(
+                          "Nearby Branches",
+                          style: TextStyle(fontSize: 14),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 25),
