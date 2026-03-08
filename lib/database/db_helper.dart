@@ -24,6 +24,15 @@ class DBHelper {
   // 🔥 CREATE ALL TABLES
   static Future<void> _onCreate(Database db, int version) async {
 
+    await db.execute('''
+      CREATE TABLE users(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      email TEXT UNIQUE,
+      password TEXT
+     )
+    ''');
+
     // CATEGORY TABLE
     await db.execute('''
       CREATE TABLE category(

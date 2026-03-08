@@ -3,13 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'database/db_helper.dart';
 import 'database/sample_data.dart';
-import 'screens/category_screen.dart';
-import 'screens/main_navigation_screen.dart';
 import 'screens/splash_screen.dart';
 
-// 🌙 GLOBAL DARK MODE NOTIFIER
+// 🌙 GLOBAL DARK MODE
 ValueNotifier<bool> isDarkMode = ValueNotifier(false);
 
+// ===============================
+// THEME FUNCTIONS
+// ===============================
 Future<void> loadThemePreference() async {
   final prefs = await SharedPreferences.getInstance();
   isDarkMode.value = prefs.getBool('darkMode') ?? false;
@@ -20,18 +21,32 @@ Future<void> saveThemePreference(bool value) async {
   await prefs.setBool('darkMode', value);
 }
 
+// ===============================
+// MAIN
+// ===============================
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // ✅ LOAD SAVED THEME FIRST
   await loadThemePreference();
 
-  await DBHelper.database;
-  await SampleData.insertInitialData();
+  // Initialize DB
+  final db = await DBHelper.database;
+
+  // 🔥 INSERT SAMPLE DATA ONLY FIRST TIME
+  final prefs = await SharedPreferences.getInstance();
+  final isFirstRun = prefs.getBool('isFirstRun') ?? true;
+
+  if (isFirstRun) {
+    await SampleData.insertInitialData();
+    await prefs.setBool('isFirstRun', false);
+  }
 
   runApp(const BankMateApp());
 }
 
+// ===============================
+// ROOT APP
+// ===============================
 class BankMateApp extends StatelessWidget {
   const BankMateApp({super.key});
 
@@ -46,6 +61,7 @@ class BankMateApp extends StatelessWidget {
 
           theme: ThemeData(
             brightness: Brightness.light,
+            useMaterial3: true,
             scaffoldBackgroundColor: Colors.grey.shade100,
             cardColor: Colors.white,
             appBarTheme: const AppBarTheme(
@@ -57,9 +73,9 @@ class BankMateApp extends StatelessWidget {
 
           darkTheme: ThemeData(
             brightness: Brightness.dark,
+            useMaterial3: true,
             scaffoldBackgroundColor: Colors.black,
             cardColor: Colors.grey.shade900,
-            dividerColor: Colors.white24,
             appBarTheme: const AppBarTheme(
               backgroundColor: Colors.black,
               foregroundColor: Colors.white,
@@ -68,40 +84,10 @@ class BankMateApp extends StatelessWidget {
           ),
 
           themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+
           home: const SplashScreen(),
         );
       },
-    );
-  }
-}
-
-class ExitWrapper extends StatelessWidget {
-  const ExitWrapper({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (_, __) {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Exit BankMate'),
-            content: const Text('Do you want to exit the app?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('No'),
-              ),
-              TextButton(
-                onPressed: () => SystemNavigator.pop(),
-                child: const Text('Yes'),
-              ),
-            ],
-          ),
-        );
-      },
-      child: const MainNavigationScreen(),
     );
   }
 }

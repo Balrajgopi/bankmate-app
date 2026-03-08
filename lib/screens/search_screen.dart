@@ -10,6 +10,7 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+
   List<Map<String, dynamic>> banks = [];
   String searchText = '';
 
@@ -19,7 +20,7 @@ class _SearchScreenState extends State<SearchScreen> {
     fetchBanks();
   }
 
-  void fetchBanks() async {
+  Future<void> fetchBanks() async {
     final db = await DBHelper.database;
 
     final result = searchText.isEmpty
@@ -37,6 +38,11 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    final isDark =
+        Theme.of(context).brightness ==
+            Brightness.dark;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Search Banks'),
@@ -46,13 +52,19 @@ class _SearchScreenState extends State<SearchScreen> {
 
           // 🔍 SEARCH FIELD
           Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'Search bank by name',
                 prefixIcon: const Icon(Icons.search),
+                filled: true,
+                fillColor: isDark
+                    ? Colors.grey.shade800
+                    : Colors.grey.shade200,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius:
+                  BorderRadius.circular(14),
+                  borderSide: BorderSide.none,
                 ),
               ),
               onChanged: (value) {
@@ -65,23 +77,57 @@ class _SearchScreenState extends State<SearchScreen> {
           // 📋 RESULT LIST
           Expanded(
             child: banks.isEmpty
-                ? const Center(child: Text('No banks found'))
+                ? const Center(
+              child: Text(
+                'No banks found',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold),
+              ),
+            )
                 : ListView.builder(
+              padding:
+              const EdgeInsets.symmetric(
+                  horizontal: 16),
               itemCount: banks.length,
-              itemBuilder: (context, index) {
-                final bank = banks[index];
+              itemBuilder:
+                  (context, index) {
+
+                final bank =
+                banks[index];
 
                 return Card(
+                  shape:
+                  RoundedRectangleBorder(
+                    borderRadius:
+                    BorderRadius.circular(16),
+                  ),
+                  margin:
+                  const EdgeInsets.only(
+                      bottom: 14),
                   child: ListTile(
-                    title: Text(bank['name']),
-                    subtitle: Text(bank['contact']),
-                    trailing: const Icon(Icons.arrow_forward_ios),
+                    leading:
+                    const Icon(
+                        Icons.account_balance),
+                    title: Text(
+                      bank['name'],
+                      style:
+                      const TextStyle(
+                        fontWeight:
+                        FontWeight.bold,
+                      ),
+                    ),
+                    trailing:
+                    const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16),
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) =>
-                              BankDetailScreen(bank: bank),
+                              BankDetailScreen(
+                                  bank:
+                                  bank),
                         ),
                       );
                     },
