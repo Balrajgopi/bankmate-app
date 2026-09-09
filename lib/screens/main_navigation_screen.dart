@@ -26,55 +26,91 @@ class _MainNavigationScreenState
     SettingsScreen(),
   ];
 
+  Future<bool> onBackPressed() async {
+
+    /// IF NOT HOME SCREEN -> GO TO HOME
+    if (currentIndex != 0) {
+      setState(() {
+        currentIndex = 0;
+      });
+      return false;
+    }
+
+    /// IF HOME SCREEN -> EXIT CONFIRMATION
+    return await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Exit BankMate"),
+        content: const Text("Do you want to exit the app?"),
+        actions: [
+          TextButton(
+            child: const Text("No"),
+            onPressed: () => Navigator.pop(context, false),
+          ),
+          ElevatedButton(
+            child: const Text("Yes"),
+            onPressed: () => Navigator.pop(context, true),
+          ),
+        ],
+      ),
+    ) ??
+        false;
+  }
+
   @override
   Widget build(BuildContext context) {
 
     final isDark =
-        Theme.of(context).brightness ==
-            Brightness.dark;
+        Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      body: screens[currentIndex],
+    return WillPopScope(
 
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor:
-        isDark ? Colors.black : Colors.white,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            currentIndex = index;
-          });
-        },
-        items: const [
+      onWillPop: onBackPressed,
 
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "Home",
-          ),
+      child: Scaffold(
 
-          BottomNavigationBarItem(
-            icon: Icon(Icons.star),
-            label: "Starred",
-          ),
+        body: screens[currentIndex],
 
-          BottomNavigationBarItem(
-            icon: Icon(Icons.compare_arrows),
-            label: "Compare",
-          ),
+        bottomNavigationBar: BottomNavigationBar(
+          currentIndex: currentIndex,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor:
+          isDark ? Colors.black : Colors.white,
+          selectedItemColor: Colors.blue,
+          unselectedItemColor: Colors.grey,
+          onTap: (index) {
+            setState(() {
+              currentIndex = index;
+            });
+          },
+          items: const [
 
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calculate),
-            label: "EMI",
-          ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: "Home",
+            ),
 
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: "Settings",
-          ),
-        ],
+            BottomNavigationBarItem(
+              icon: Icon(Icons.star),
+              label: "Starred",
+            ),
+
+            BottomNavigationBarItem(
+              icon: Icon(Icons.compare_arrows),
+              label: "Compare",
+            ),
+
+            BottomNavigationBarItem(
+              icon: Icon(Icons.calculate),
+              label: "EMI",
+            ),
+
+            BottomNavigationBarItem(
+              icon: Icon(Icons.settings),
+              label: "Settings",
+            ),
+          ],
+        ),
       ),
     );
   }

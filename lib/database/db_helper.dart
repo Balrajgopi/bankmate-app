@@ -15,25 +15,29 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 2, // ⬅ upgraded version
+      version: 3, // 🔥 upgraded version
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
   }
 
-  // 🔥 CREATE ALL TABLES
+  // ===============================
+  // CREATE ALL TABLES
+  // ===============================
   static Future<void> _onCreate(Database db, int version) async {
 
+    /// USERS TABLE
     await db.execute('''
       CREATE TABLE users(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT,
-      email TEXT UNIQUE,
-      password TEXT
-     )
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        email TEXT UNIQUE,
+        password TEXT,
+        image TEXT
+      )
     ''');
 
-    // CATEGORY TABLE
+    /// CATEGORY TABLE
     await db.execute('''
       CREATE TABLE category(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,7 +45,7 @@ class DBHelper {
       )
     ''');
 
-    // BANK TABLE
+    /// BANK TABLE
     await db.execute('''
       CREATE TABLE bank(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,7 +56,7 @@ class DBHelper {
       )
     ''');
 
-    // 🔥 BANK DETAILS TABLE (NEW STRUCTURE)
+    /// BANK DETAILS TABLE
     await db.execute('''
       CREATE TABLE bank_details(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,7 +72,7 @@ class DBHelper {
       )
     ''');
 
-    // INTEREST RATE TABLE (for comparison screen)
+    /// INTEREST RATE TABLE
     await db.execute('''
       CREATE TABLE interest_rate(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,7 +84,7 @@ class DBHelper {
       )
     ''');
 
-    // ACCOUNT OPENING TABLE
+    /// ACCOUNT OPENING TABLE
     await db.execute('''
       CREATE TABLE account_opening(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,7 +94,7 @@ class DBHelper {
       )
     ''');
 
-    // FEES TABLE
+    /// FEES TABLE
     await db.execute('''
       CREATE TABLE fees(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -101,13 +105,15 @@ class DBHelper {
     ''');
   }
 
-  // 🔥 HANDLE DATABASE UPGRADE SAFELY
+  // ===============================
+  // DATABASE UPGRADE HANDLER
+  // ===============================
   static Future<void> _onUpgrade(
       Database db, int oldVersion, int newVersion) async {
 
+    /// VERSION 2 UPDATE
     if (oldVersion < 2) {
 
-      // Create bank_details if not exists
       await db.execute('''
         CREATE TABLE IF NOT EXISTS bank_details(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -123,9 +129,19 @@ class DBHelper {
         )
       ''');
     }
+
+    /// VERSION 3 UPDATE (PROFILE IMAGE)
+    if (oldVersion < 3) {
+
+      await db.execute(
+          "ALTER TABLE users ADD COLUMN image TEXT"
+      );
+    }
   }
 
-  // 🔥 CLEAR DATABASE (Optional Utility)
+  // ===============================
+  // DELETE DATABASE (FOR TESTING)
+  // ===============================
   static Future<void> deleteDatabaseFile() async {
     final path = join(await getDatabasesPath(), 'bankmate.db');
     await deleteDatabase(path);

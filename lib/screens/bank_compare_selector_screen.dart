@@ -36,13 +36,17 @@ class _BankCompareSelectorScreenState
     });
   }
 
+  /// SELECT / DESELECT BANK
   void toggleSelection(Map<String, dynamic> bank) {
 
     setState(() {
 
-      if (selectedBanks.contains(bank)) {
+      final alreadySelected =
+      selectedBanks.any((b) => b['id'] == bank['id']);
 
-        selectedBanks.remove(bank);
+      if (alreadySelected) {
+
+        selectedBanks.removeWhere((b) => b['id'] == bank['id']);
 
       } else {
 
@@ -62,8 +66,17 @@ class _BankCompareSelectorScreenState
     });
   }
 
+  /// CHECK IF BANK IS SELECTED
   bool isSelected(Map<String, dynamic> bank) {
-    return selectedBanks.contains(bank);
+
+    return selectedBanks.any((b) => b['id'] == bank['id']);
+  }
+
+  /// RESET SELECTION
+  void resetSelection() {
+    setState(() {
+      selectedBanks.clear();
+    });
   }
 
   @override
@@ -73,6 +86,7 @@ class _BankCompareSelectorScreenState
         Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+
       appBar: AppBar(
         title: const Text("Select Banks to Compare"),
       ),
@@ -80,7 +94,9 @@ class _BankCompareSelectorScreenState
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : ListView.builder(
+
         padding: const EdgeInsets.all(16),
+
         itemCount: banks.length,
 
         itemBuilder: (context, index) {
@@ -174,9 +190,9 @@ class _BankCompareSelectorScreenState
 
         label: const Text("Compare"),
 
-        onPressed: () {
+        onPressed: () async {
 
-          Navigator.push(
+          await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (_) => BankComparisonScreen(
@@ -185,6 +201,9 @@ class _BankCompareSelectorScreenState
               ),
             ),
           );
+
+          /// RESET AFTER RETURN
+          resetSelection();
         },
       )
           : null,

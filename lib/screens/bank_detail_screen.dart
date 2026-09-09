@@ -48,7 +48,7 @@ class _BankDetailScreenState extends State<BankDetailScreen> {
           context,
           MaterialPageRoute(
             builder: (_) => BankInfoDetailScreen(
-              bankName: widget.bank['name'],   // ✅ FIXED
+              bankName: widget.bank['name'],
               title: title,
             ),
           ),
@@ -65,7 +65,7 @@ class _BankDetailScreenState extends State<BankDetailScreen> {
 
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06), // ✅ FIXED
+              color: Colors.black.withValues(alpha: 0.06),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),
@@ -83,7 +83,7 @@ class _BankDetailScreenState extends State<BankDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withValues(alpha: 0.1), // ✅ FIXED
+                    color: Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(icon, color: Colors.blue),
@@ -125,9 +125,23 @@ class _BankDetailScreenState extends State<BankDetailScreen> {
     );
   }
 
-  Future<void> openBranchLocator(String url) async {
+  /// OPEN WEBSITE (SMART METHOD)
+  Future<void> openWebsite(String? url) async {
 
-    final Uri uri = Uri.parse(url);
+    Uri uri;
+
+    if (url != null && url.isNotEmpty) {
+
+      uri = Uri.parse(url);
+
+    } else {
+
+      /// Fallback Google Search
+      String bankName = widget.bank['name'];
+
+      uri = Uri.parse(
+          "https://www.google.com/search?q=$bankName+official+website");
+    }
 
     await launchUrl(
       uri,
@@ -135,6 +149,7 @@ class _BankDetailScreenState extends State<BankDetailScreen> {
     );
   }
 
+  /// OPEN GOOGLE MAPS
   Future<void> openNearbyBanks() async {
 
     String bankName = widget.bank['name'];
@@ -212,19 +227,20 @@ class _BankDetailScreenState extends State<BankDetailScreen> {
                 Row(
                   children: [
 
+                    /// WEBSITE BUTTON
                     Expanded(
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.language),
-                        label: const Text("WebSite"),
+                        label: const Text("Website"),
                         onPressed: () {
-                          openBranchLocator(
-                              data['branchLocator']);
+                          openWebsite(data['branchLocator']);
                         },
                       ),
                     ),
 
                     const SizedBox(width: 10),
 
+                    /// MAP BUTTON
                     Expanded(
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.map),

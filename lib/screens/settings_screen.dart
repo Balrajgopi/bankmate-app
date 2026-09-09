@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,6 +7,7 @@ import '../main.dart';
 import 'login_screen.dart';
 import 'starred_banks_screen.dart';
 import 'feedback_screen.dart';
+import 'profile_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -19,6 +21,7 @@ class _SettingsScreenState
     extends State<SettingsScreen> {
 
   String userName = "User";
+  String? imagePath;
 
   @override
   void initState() {
@@ -26,13 +29,22 @@ class _SettingsScreenState
     loadUser();
   }
 
+  /// LOAD USER PROFILE
   Future<void> loadUser() async {
-    final prefs =
-    await SharedPreferences.getInstance();
-    setState(() {
-      userName =
-          prefs.getString('userName') ?? "User";
-    });
+
+    final db = await DBHelper.database;
+
+    final result = await db.query('users');
+
+    if (result.isNotEmpty) {
+
+      final user = result.first;
+
+      setState(() {
+        userName = user['name']?.toString() ?? "User";
+        imagePath = user['image']?.toString();
+      });
+    }
   }
 
   // ===============================
@@ -42,8 +54,7 @@ class _SettingsScreenState
     final Uri emailUri = Uri(
       scheme: 'mailto',
       path: 'rupeshghongade33@gmail.com',
-      query:
-      'subject=BankMate App Feedback',
+      query: 'subject=BankMate App Feedback',
     );
 
     await launchUrl(emailUri);
@@ -53,6 +64,7 @@ class _SettingsScreenState
   // RESET STARRED DATA
   // ===============================
   Future<void> resetStarredData() async {
+
     final db = await DBHelper.database;
 
     await db.update(
@@ -65,8 +77,7 @@ class _SettingsScreenState
     ScaffoldMessenger.of(context)
         .showSnackBar(
       const SnackBar(
-        content:
-        Text("Starred banks cleared"),
+        content: Text("Starred banks cleared"),
       ),
     );
   }
@@ -75,8 +86,10 @@ class _SettingsScreenState
   // LOGOUT
   // ===============================
   Future<void> logout() async {
+
     final prefs =
     await SharedPreferences.getInstance();
+
     await prefs.setBool('isLoggedIn', false);
     await prefs.remove('userName');
 
@@ -93,6 +106,7 @@ class _SettingsScreenState
   }
 
   void showLogoutDialog() {
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -100,11 +114,13 @@ class _SettingsScreenState
         content: const Text(
             "Are you sure you want to logout?"),
         actions: [
+
           TextButton(
             onPressed: () =>
                 Navigator.pop(context),
             child: const Text("Cancel"),
           ),
+
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
@@ -118,6 +134,7 @@ class _SettingsScreenState
   }
 
   void showAboutDialogBox() {
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -131,17 +148,20 @@ class _SettingsScreenState
               "and explore banking information.",
         ),
         actions: [
+
           TextButton(
             onPressed: () =>
                 Navigator.pop(context),
             child: const Text("OK"),
           )
+
         ],
       ),
     );
   }
 
   void showResetDialog() {
+
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -150,11 +170,13 @@ class _SettingsScreenState
         content: const Text(
             "This will remove all starred banks.\n\nContinue?"),
         actions: [
+
           TextButton(
             onPressed: () =>
                 Navigator.pop(context),
             child: const Text("Cancel"),
           ),
+
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
@@ -175,11 +197,12 @@ class _SettingsScreenState
             Brightness.dark;
 
     return Scaffold(
+
       appBar:
       AppBar(title: const Text("Settings")),
+
       body: ListView(
-        padding:
-        const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         children: [
 
           // ===============================
@@ -191,13 +214,19 @@ class _SettingsScreenState
               borderRadius:
               BorderRadius.circular(18),
             ),
+
             child: ListTile(
-              leading:
-              const CircleAvatar(
+
+              leading: CircleAvatar(
                 radius: 28,
-                child:
-                Icon(Icons.person),
+                backgroundImage: imagePath != null
+                    ? FileImage(File(imagePath!))
+                    : null,
+                child: imagePath == null
+                    ? const Icon(Icons.person)
+                    : null,
               ),
+
               title: Text(
                 userName,
                 style: const TextStyle(
@@ -205,8 +234,27 @@ class _SettingsScreenState
                   FontWeight.bold,
                 ),
               ),
+
               subtitle:
-              const Text("Logged In User"),
+              const Text("Edit Profile"),
+
+              trailing:
+              const Icon(Icons.arrow_forward_ios),
+
+              onTap: () async {
+
+                /// OPEN PROFILE SCREEN
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                    const ProfileScreen(),
+                  ),
+                );
+
+                /// REFRESH PROFILE
+                loadUser();
+              },
             ),
           ),
 
@@ -244,6 +292,7 @@ class _SettingsScreenState
             title:
             const Text("Starred Banks"),
             onTap: () {
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -274,6 +323,7 @@ class _SettingsScreenState
             title:
             const Text("Feedback"),
             onTap: () {
+
               Navigator.push(
                 context,
                 MaterialPageRoute(
